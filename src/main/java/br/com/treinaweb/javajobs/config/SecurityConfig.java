@@ -12,7 +12,10 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import br.com.treinaweb.javajobs.filters.ExceptionHandlerFilter;
+import br.com.treinaweb.javajobs.filters.JwtRequestFilter;
 import br.com.treinaweb.javajobs.services.AuthenticationService;
 
 @Configuration
@@ -25,17 +28,26 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private AuthenticationService authenticationService;
 
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
+
+    @Autowired
+    private ExceptionHandlerFilter exceptionHandlerFilter;
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable();
+        http.csrf(csrf -> csrf.disable());
 
-        http.authorizeRequests()
-            .antMatchers(HttpMethod.GET, API_JOBS_URL).permitAll()
-            .antMatchers(API_USERS_URL).permitAll()
-            .anyRequest().authenticated();
+        http.authorizeRequests(requests -> requests
+                .antMatchers(HttpMethod.GET, API_JOBS_URL).permitAll()
+                .antMatchers(API_USERS_URL).permitAll()
+                .anyRequest().authenticated());
 
-        http.sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http.sessionManagement(management -> management
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(exceptionHandlerFilter, JwtRequestFilter.class);
     }
 
     @Override
